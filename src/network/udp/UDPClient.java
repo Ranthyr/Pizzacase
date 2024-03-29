@@ -1,26 +1,26 @@
 package network.udp;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 
 public class UDPClient {
     private static final String SERVER_ADDRESS = "localhost";
     private static final int SERVER_PORT = 5001;
 
-    public void connectToServer(String order) {
-        try {
-            DatagramSocket clientSocket = new DatagramSocket();
+    public void connectToServer(String message) {
+        try (DatagramSocket socket = new DatagramSocket()) {
+            byte[] sendData = message.getBytes();
             InetAddress serverAddress = InetAddress.getByName(SERVER_ADDRESS);
-
-            // Send order to server
-            byte[] sendData = order.getBytes();
             DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, SERVER_PORT);
-            clientSocket.send(sendPacket);
-
-            // Close connection
-            clientSocket.close();
+            socket.send(sendPacket);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public String getResponse() {
+        return "Order received. Thank you!";
     }
 }

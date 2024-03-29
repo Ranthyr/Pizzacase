@@ -5,20 +5,19 @@ import network.udp.UDPServer;
 
 public class Main {
     public static void main(String[] args) {
+        // Maak de ServerGUI en toon deze
+        ServerGUI serverGUI = new ServerGUI();
+
         // Start de TCP-server in een aparte thread
-        new Thread(new TCPServer()).start();
+        new Thread(new TCPServer(serverGUI)).start();
 
         // Start de UDP-server in een aparte thread
-        new Thread(new UDPServer()).start();
+        new Thread(new UDPServer(serverGUI)).start();
 
         // Maak en toon de klant GUI in een aparte thread
         new Thread(() -> {
             ClientGUI clientGUI = new ClientGUI();
             clientGUI.createAndShowGUI();
         }).start();
-
-        // Maak en toon de server GUI
-        ServerGUI serverGUI = new ServerGUI();
     }
 }
-

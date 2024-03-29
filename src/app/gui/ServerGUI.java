@@ -14,28 +14,18 @@ public class ServerGUI {
     public ServerGUI() {
         ordersList = new ArrayList<>();
 
-        // Maak het frame
-        frame = new JFrame("Pizza Bestellen - Restaurant");
+        frame = new JFrame("Pizza Bestellingen - Restaurant");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(400, 400);
+        frame.setSize(800, 600);
 
-        // Maak het paneel
-        panel = new JPanel();
+        panel = new JPanel(new GridLayout(0, 1));
         frame.add(panel);
-
-        // Voeg GUI-componenten toe
-        panel.setLayout(new BorderLayout());
-
-        JLabel titleLabel = new JLabel("Bestellingen overzicht");
-        titleLabel.setHorizontalAlignment(JLabel.CENTER);
-        panel.add(titleLabel, BorderLayout.NORTH);
 
         ordersTextArea = new JTextArea();
         ordersTextArea.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(ordersTextArea);
-        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(scrollPane);
 
-        // Toon het frame
         frame.setVisible(true);
     }
 
@@ -45,11 +35,9 @@ public class ServerGUI {
     }
 
     private void updateOrdersTextArea() {
-        StringBuilder orders = new StringBuilder();
+        ordersTextArea.setText("");
         for (String order : ordersList) {
-            orders.append(order).append("\n\n");
+            ordersTextArea.append(order + "\n\n");
         }
-        ordersTextArea.setText(orders.toString());
     }
 }
-
