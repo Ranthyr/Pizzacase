@@ -8,7 +8,7 @@ import java.net.SocketException;
 import app.server.Server;
 
 public class UDPServer implements Runnable {
-    final static int PORT = 5001;
+    public final static int PORT = 5001;
     private static final int BUFFER_SIZE = 1024;
 
     private DatagramSocket socket;

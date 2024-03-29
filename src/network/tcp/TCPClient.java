@@ -11,15 +11,18 @@ public class TCPClient {
     private PrintWriter out;
     private BufferedReader in;
 
-    public void connectToServer(String order) {
+    public void connectToServer(String host, int port) {
         try {
-            socket = new Socket("localhost", TCPServer.PORT);
+            socket = new Socket(host, port);
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out.println(order);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void sendMessage(String message) {
+        out.println(message);
     }
 
     public String getResponse() {
@@ -28,6 +31,22 @@ public class TCPClient {
         } catch (IOException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public void close() {
+        try {
+            if (socket != null) {
+                socket.close();
+            }
+            if (out != null) {
+                out.close();
+            }
+            if (in != null) {
+                in.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }
