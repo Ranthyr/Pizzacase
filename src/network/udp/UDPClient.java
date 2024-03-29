@@ -1,26 +1,48 @@
 package network.udp;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.net.*;
 
 public class UDPClient {
-    private static final String SERVER_ADDRESS = "localhost";
-    private static final int SERVER_PORT = 5001;
+    private DatagramSocket socket;
+    private InetAddress address;
+    private byte[] buffer;
+
+    public UDPClient() {
+        try {
+            socket = new DatagramSocket();
+            address = InetAddress.getByName("localhost");
+        } catch (SocketException | UnknownHostException e) {
+            e.printStackTrace();
+        }
+    }
 
     public void connectToServer(String message) {
-        try (DatagramSocket socket = new DatagramSocket()) {
-            byte[] sendData = message.getBytes();
-            InetAddress serverAddress = InetAddress.getByName(SERVER_ADDRESS);
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, SERVER_PORT);
-            socket.send(sendPacket);
+        buffer = message.getBytes();
+
+        DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, UDPServer.PORT);
+        try {
+            socket.send(packet);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public String getResponse() {
-        return "Order received. Thank you!";
+        buffer = new byte[1024];
+        DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+        try {
+            socket.receive(packet);
+            return new String(packet.getData(), 0, packet.getLength());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "Error: " + e.getMessage();
+        }
+    }
+
+    public void close() {
+        if (socket != null) {
+            socket.close();
+        }
     }
 }

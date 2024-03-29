@@ -1,43 +1,43 @@
 package app.gui;
 
+import app.server.Server;
+
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
+import java.util.List;
 
 public class ServerGUI {
     private JFrame frame;
-    private JPanel panel;
-    private JTextArea ordersTextArea;
-
-    private ArrayList<String> ordersList;
+    private JTextArea orderTextArea;
 
     public ServerGUI() {
-        ordersList = new ArrayList<>();
-
-        frame = new JFrame("Pizza Bestellingen - Restaurant");
+        frame = new JFrame("Server Dashboard");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 600);
 
-        panel = new JPanel(new GridLayout(0, 1));
-        frame.add(panel);
+        JPanel panel = new JPanel(new BorderLayout());
 
-        ordersTextArea = new JTextArea();
-        ordersTextArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(ordersTextArea);
-        panel.add(scrollPane);
+        orderTextArea = new JTextArea(20, 40);
+        orderTextArea.setEditable(false);
 
+        JScrollPane scrollPane = new JScrollPane(orderTextArea);
+
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        frame.getContentPane().add(panel);
+        frame.pack();
+    }
+
+    public void show() {
         frame.setVisible(true);
     }
 
-    public void addOrder(String order) {
-        ordersList.add(order);
-        updateOrdersTextArea();
-    }
-
-    private void updateOrdersTextArea() {
-        ordersTextArea.setText("");
-        for (String order : ordersList) {
-            ordersTextArea.append(order + "\n\n");
+    public void updateOrders() {
+        // Haal bestellingen op uit de database en update de tekstgebied
+        List<String> orders = Server.getInstance().getOrders();
+        StringBuilder sb = new StringBuilder();
+        for (String order : orders) {
+            sb.append(order).append("\n");
         }
+        orderTextArea.setText(sb.toString());
     }
 }

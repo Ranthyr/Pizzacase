@@ -1,33 +1,55 @@
 package network.udp;
 
-import app.gui.ServerGUI;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketException;
+
+import app.server.Server;
 
 public class UDPServer implements Runnable {
-    private static final int SERVER_PORT = 5001;
-    private ServerGUI serverGUI;
+    final static int PORT = 5001;
+    private static final int BUFFER_SIZE = 1024;
 
-    public UDPServer(ServerGUI serverGUI) {
-        this.serverGUI = serverGUI;
+    private DatagramSocket socket;
+    private byte[] buffer = new byte[BUFFER_SIZE];
+    private Server server;
+
+    public UDPServer() {
+        try {
+            socket = new DatagramSocket(PORT);
+            server = Server.getInstance();
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void run() {
-        try (DatagramSocket socket = new DatagramSocket(SERVER_PORT)) {
-            serverGUI.addOrder("UDP Server started on port " + SERVER_PORT);
+        while (true) {
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+            try {
+                socket.receive(packet);
+                String received = new String(packet.getData(), 0, packet.getLength());
+                System.out.println("Received from client: " + received);
 
-            while (true) {
-                byte[] receiveData = new byte[1024];
-                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                socket.receive(receivePacket);
-                String clientMessage = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                serverGUI.addOrder("Received from client: " + clientMessage);
+                // Opslaan van de bestelling in de database
+                server.saveOrder(received);
+
+                // Respond to client
+                byte[] responseMessage = "Order received. Thank you!".getBytes();
+                DatagramPacket responsePacket = new DatagramPacket(responseMessage, responseMessage.length,
+                        packet.getAddress(), packet.getPort());
+                socket.send(responsePacket);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        }
+    }
+
+    public void close() {
+        if (socket != null) {
+            socket.close();
         }
     }
 }
