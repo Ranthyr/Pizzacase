@@ -85,3 +85,42 @@ class ConfirmPanel extends JPanel implements GUIComponent {
 - **Uniformiteit en Flexibiliteit:** Door alle GUI-componenten door dezelfde interface te laten implementeren, kunnen we gemakkelijk nieuwe schermen of panelen toevoegen zonder de algehele systeemarchitectuur te verstoren.
 - **Eenvoudig Beheer:** Het beheren, toevoegen of verwijderen van GUI-componenten wordt gestroomlijnd, wat bijdraagt aan een schone en onderhoudbare codebasis.
 - **Modulariteit:** Elk paneel kan onafhankelijk worden ontwikkeld en getest, wat de modulariteit van de applicatie verbetert.
+
+### Visitor
+
+#### Toepassing in het project
+
+Het Visitor-patroon wordt in het Pizzacase-project gebruikt om diverse bewerkingen op pizza-bestellingen uit te voeren zonder de klassen van de objecten te wijzigen. Dit stelt ons in staat om nieuwe operaties toe te voegen en uit te voeren op bestellingen, zoals het verzamelen van statistieken, zonder de structuur of implementatie van de `PizzaOrder` klasse te moeten wijzigen.
+
+#### Implementatie
+
+De implementatie omvat een `OrderVisitor` interface met een `visit` methode voor elk type bestelling. De `PizzaOrder` klasse implementeert de `Order` interface, die een `accept` methode bevat. Deze methode accepteert een `OrderVisitor` die vervolgens de bijbehorende `visit` methode aanroept op het `PizzaOrder` object. De `OrderStatisticsVisitor` klasse implementeert de `OrderVisitor` interface en verzamelt verschillende statistieken over de bestellingen, zoals het totaal aantal bestellingen, gemiddeld aantal toppings per bestelling, en de meest voorkomende toppings.
+
+```java
+public interface OrderVisitor {
+    void visit(PizzaOrder order);
+}
+
+public class PizzaOrder implements Order {
+    // Velden en constructor
+    public void accept(OrderVisitor visitor) {
+        visitor.visit(this);
+    }
+    // Getter-methoden
+}
+
+public class OrderStatisticsVisitor implements OrderVisitor {
+    // Velden voor statistieken
+    @Override
+    public void visit(PizzaOrder order) {
+        // Logica voor het bijwerken van statistieken
+    }
+    // Methoden voor het ophalen van statistieken
+}
+```
+
+#### Voordelen
+
+- **Scheiding van Zorgen:** Door het Visitor-patroon kunnen operationele details gescheiden worden gehouden van de objectstructuur, wat de code schoon en onderhoudbaar houdt.
+- **Uitbreidbaarheid:** Het patroon maakt het gemakkelijk om nieuwe operaties op de objectstructuur toe te voegen zonder deze te wijzigen, wat de uitbreidbaarheid van de applicatie verbetert.
+- **Flexibiliteit:** Verschillende bezoekers kunnen worden gedefinieerd om verschillende operaties uit te voeren zonder dat de objecten die bezocht worden gewijzigd hoeven te worden.
