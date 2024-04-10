@@ -193,3 +193,49 @@ private boolean verifyHMAC(byte[] message, byte[] receivedMac) {
 - **Vertrouwelijkheid:** SSL en MAC helpen om de vertrouwelijkheid van de gegevens te bewaren door te verzekeren dat alleen geautoriseerde partijen toegang hebben tot de informatie.
 - **Integriteit:** Ze garanderen dat de data niet is gewijzigd tijdens de overdracht, waardoor de betrouwbaarheid van de communicatie tussen client en server wordt gewaarborgd.
 - **Authenticatie:** SSL biedt een mechanisme voor het verifiëren van de identiteit van de partijen, terwijl MAC de authenticiteit van de verzonden berichten verifieert.
+
+### Input Validatie
+
+#### Toepassing in het project
+
+Input validatie is van cruciaal belang in het Pizzacase-project om ervoor te zorgen dat de gegevens die door gebruikers worden ingevoerd, correct zijn en voldoen aan de verwachte indeling en criteria. Dit helpt bij het voorkomen van fouten, onjuiste invoer en potentiële beveiligingsrisico's in de applicatie. De input validatie wordt toegepast op verschillende gebieden, zoals klantgegevens, adresinformatie en bestellingsdetails.
+
+#### Implementatie
+
+In de GUI van het Pizzacase-project wordt inputvalidatie toegepast op het invoeren van naam, adres, stad en postcode in het `AddressPanel`. Hier wordt gebruik gemaakt van reguliere expressies (regex) om te controleren of de ingevoerde gegevens aan de verwachte indeling voldoen.
+
+```java
+private boolean validateInput(String name, String street, String city, String postalCode) {
+    // Naam moet minstens één letter bevatten
+    if (!name.matches(".*\\p{L}.*")) {
+        return false;
+    }
+
+    // Straatnaam moet minstens één letter en één cijfer bevatten
+    if (!street.matches(".*\\p{L}.*") || !street.matches(".*\\d.*")) {
+        return false;
+    }
+
+    // Stad moet minstens één letter bevatten
+    if (!city.matches(".*\\p{L}.*")) {
+        return false;
+    }
+
+    // Postcode moet een geldig Nederlands postcodeformaat hebben (1234 AB)
+    String regexPostalCode = "^\\d{4}\\s?[a-zA-Z]{2}$";
+    if (!Pattern.matches(regexPostalCode, postalCode)) {
+        return false;
+    }
+
+    return true;
+}
+```
+
+Deze methode controleert de invoer op verschillende criteria, zoals het bestaan van minstens één letter in de naam, minstens één letter en één cijfer in de straatnaam, minstens één letter in de stad, en een geldig Nederlands postcodeformaat voor de postcode.
+
+#### Voordelen
+
+- **Gegevensintegriteit:** Inputvalidatie helpt bij het waarborgen van de integriteit van de gegevens door ervoor te zorgen dat alleen geldige en correct geformatteerde gegevens worden geaccepteerd.
+- **Gebruikerservaring:** Door gebruikers te begeleiden bij het invoeren van correcte gegevens en duidelijke foutmeldingen te verstrekken bij ongeldige invoer, verbetert inputvalidatie de gebruikerservaring.
+- **Beveiliging:** Het voorkomt potentieel schadelijke invoer en vermindert daarmee het risico op beveiligingskwetsbaarheden, zoals SQL-injectie en cross-site scripting (XSS).
+
