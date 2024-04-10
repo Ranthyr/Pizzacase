@@ -1,5 +1,6 @@
 package app.visitor;
 
+// Concrete implementation of Order representing a pizza order
 public class PizzaOrder implements Order {
     private String customerName;
     private String address;
@@ -8,6 +9,7 @@ public class PizzaOrder implements Order {
     private String orderDescription;
     private String orderTime;
 
+    // Constructor to initialize a PizzaOrder instance
     public PizzaOrder(String customerName, String address, String city, String postalCode, String orderDescription, String orderTime) {
         this.customerName = customerName;
         this.address = address;
@@ -17,10 +19,12 @@ public class PizzaOrder implements Order {
         this.orderTime = orderTime;
     }
 
+    // Method to accept an OrderVisitor
     public void accept(OrderVisitor visitor) {
-        visitor.visit(this);
+        visitor.visit(this); // Calls visit method of the OrderVisitor
     }
 
+    // Getter methods for various order details
     public String getCustomerName() {
         return customerName;
     }

@@ -1,23 +1,10 @@
 package network.tcp;
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocket;
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.security.KeyManagementException;
-
+import javax.net.ssl.*;
 import app.server.Server;
+import java.io.*;
+import java.security.*;
+import java.security.cert.CertificateException;
 
 public class TCPSSLServer implements Runnable {
     private static final int PORT = 5000;
@@ -25,75 +12,95 @@ public class TCPSSLServer implements Runnable {
     @Override
     public void run() {
         try {
+            // Loading the keystore for SSL configuration
             KeyStore serverKeyStore = KeyStore.getInstance("JKS");
             char[] password = "PizzaCase".toCharArray();
             try (FileInputStream fis = new FileInputStream("src/network/tcp/keystore.jks")) {
                 serverKeyStore.load(fis, password);
             }
 
+            // Initializing the KeyManagerFactory and SSLContext for SSL configuration
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             keyManagerFactory.init(serverKeyStore, password);
-
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
 
+            // Configuring the SSLServerSocket
             SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
             SSLServerSocket serverSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket(PORT);
-            System.out.println("TCP SSL Server gestart op poort " + PORT);
+            System.out.println("TCP SSL Server started on port " + PORT);
 
+            // Accepting client connections
             while (true) {
-                try (SSLSocket clientSocket = (SSLSocket) serverSocket.accept()) {
-                    System.out.println("Client verbonden: " + clientSocket);
+                try {
+                    SSLSocket clientSocket = (SSLSocket) serverSocket.accept();
+                    System.out.println("Client connected: " + clientSocket);
 
-                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-
-                    StringBuilder messageBuilder = new StringBuilder();
-                    String line;
-                    while ((line = in.readLine()) != null) {
-                        if (line.equals("EOF")) {
-                            break; // Stop lezen wanneer EOF marker is gevonden
+                    new Thread(() -> {
+                        try {
+                            handleClient(clientSocket);
+                        } catch (IOException e) {
+                            System.err.println("Error during communication with client: " + e.getMessage());
+                        } finally {
+                            try {
+                                clientSocket.close();
+                            } catch (IOException e) {
+                                System.err.println("Error closing client socket: " + e.getMessage());
+                            }
                         }
-                        messageBuilder.append(line).append("\n");
-                    }
-
-                    String receivedMessage = messageBuilder.toString();
-                    System.out.println("Volledig bericht ontvangen van client: " + receivedMessage);
-
-                    // Hieronder volgt de verwerking van het bericht zoals je oorspronkelijk had
-                    String[] orderDetails = receivedMessage.split("\n");
-                    if (orderDetails.length >= 6) {
-                        String customerName = orderDetails[0];
-                        String street = orderDetails[1];
-                        String city = orderDetails[2];
-                        String postalCode = orderDetails[3];
-                        StringBuilder orderDescriptionBuilder = new StringBuilder();
-                        for (int i = 4; i < orderDetails.length - 1; i++) {
-                            orderDescriptionBuilder.append(orderDetails[i]).append("\n");
-                        }
-                        String orderDescription = orderDescriptionBuilder.toString().trim();
-                        String orderTime = orderDetails[orderDetails.length - 1];
-
-                        boolean savedSuccessfully = Server.getInstance().saveOrderToDatabase(customerName, street, city, postalCode, orderDescription, orderTime);
-
-                        if (savedSuccessfully) {
-                            System.out.println("Bestelling succesvol opgeslagen in de database.");
-                            out.println("Order bevestigd: " + receivedMessage);
-                        } else {
-                            System.err.println("Bestelling kon niet worden opgeslagen in de database.");
-                            out.println("Order kon niet worden opgeslagen: " + receivedMessage);
-                        }
-                    } else {
-                        System.err.println("Ongeldige bestelling ontvangen.");
-                        out.println("Ongeldige bestelling ontvangen.");
-                    }
+                    }).start();
                 } catch (IOException e) {
-                    System.err.println("Fout tijdens communicatie met client: " + e.getMessage());
+                    System.err.println("Error accepting client connection: " + e.getMessage());
                 }
             }
         } catch (IOException | NoSuchAlgorithmException | KeyManagementException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
-            System.err.println("Server startfout: " + e.getMessage());
+            System.err.println("Server startup error: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private void handleClient(SSLSocket clientSocket) throws IOException {
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
+
+            StringBuilder messageBuilder = new StringBuilder();
+            String line;
+            while ((line = in.readLine()) != null) {
+                if (line.equals("EOF")) {
+                    break;
+                }
+                messageBuilder.append(line).append("\n");
+            }
+
+            String receivedMessage = messageBuilder.toString();
+            System.out.println("Received complete message from client: " + receivedMessage);
+
+            String[] orderDetails = receivedMessage.split("\n");
+            if (orderDetails.length >= 6) {
+                String customerName = orderDetails[0];
+                String street = orderDetails[1];
+                String city = orderDetails[2];
+                String postalCode = orderDetails[3];
+                StringBuilder orderDescriptionBuilder = new StringBuilder();
+                for (int i = 4; i < orderDetails.length - 1; i++) {
+                    orderDescriptionBuilder.append(orderDetails[i]).append("\n");
+                }
+                String orderDescription = orderDescriptionBuilder.toString().trim();
+                String orderTime = orderDetails[orderDetails.length - 1];
+
+                boolean savedSuccessfully = Server.getInstance().saveOrderToDatabase(customerName, street, city, postalCode, orderDescription, orderTime);
+
+                if (savedSuccessfully) {
+                    System.out.println("Order successfully saved to database.");
+                    out.println("Order confirmed: " + receivedMessage);
+                } else {
+                    System.err.println("Order could not be saved to database.");
+                    out.println("Order could not be saved: " + receivedMessage);
+                }
+            } else {
+                System.err.println("Invalid order received.");
+                out.println("Invalid order received.");
+            }
         }
     }
 }

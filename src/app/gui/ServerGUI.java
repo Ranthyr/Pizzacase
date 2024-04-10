@@ -9,16 +9,19 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 
+// GUI class for the server application
 public class ServerGUI {
     private JFrame frame;
     private JTextArea orderListTextArea;
 
+    // Constructor to initialize the GUI
     public ServerGUI() {
         initializeGUI();
         fetchOrdersFromDatabase();
         displayOrderStatistics();
     }
 
+    // Initialize the GUI components
     private void initializeGUI() {
         frame = new JFrame("Server - Bestellingen");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -37,6 +40,7 @@ public class ServerGUI {
         frame.setVisible(true);
     }
 
+    // Fetch orders from the database and display them
     private void fetchOrdersFromDatabase() {
         List<PizzaOrder> orders = Server.getInstance().fetchOrders();
         StringBuilder ordersText = new StringBuilder();
@@ -51,6 +55,7 @@ public class ServerGUI {
         orderListTextArea.setText(ordersText.toString());
     }
 
+    // Display order statistics
     private void displayOrderStatistics() {
         OrderStatisticsVisitor statisticsVisitor = new OrderStatisticsVisitor();
         List<PizzaOrder> orders = Server.getInstance().fetchOrders();
@@ -58,7 +63,6 @@ public class ServerGUI {
             order.accept(statisticsVisitor);
         }
 
-        // Display statistics in JOptionPane (you can customize this part according to your requirement)
         String statisticsMessage = "Totaal aantal bestellingen: " + statisticsVisitor.getTotalOrders() + "\n" +
                 "Gemiddeld aantal toppings per bestelling: " + statisticsVisitor.getAverageToppingsPerOrder() + "\n" +
                 "Meest voorkomende toppings: " + statisticsVisitor.getMostCommonToppings() + "\n" +
@@ -66,6 +70,7 @@ public class ServerGUI {
         JOptionPane.showMessageDialog(frame, statisticsMessage, "Statistieken", JOptionPane.INFORMATION_MESSAGE);
     }
 
+    // Main method to start the server GUI
     public static void main(String[] args) {
         SwingUtilities.invokeLater(ServerGUI::new);
     }

@@ -15,20 +15,22 @@ public class UDPClient {
     private int port;
     private SecretKeySpec secretKey;
 
+    // Method to establish connection with the server
     public boolean connectToServer(String host, int port, String sharedSecretKey) {
         try {
             socket = new DatagramSocket();
             address = InetAddress.getByName(host);
             this.port = port;
             this.secretKey = new SecretKeySpec(sharedSecretKey.getBytes(), "HmacSHA256");
-            System.out.println("UDP Client verbonden met " + host + " op poort " + port);
+            System.out.println("UDP Client connected to " + host + " on port " + port);
             return true;
         } catch (IOException e) {
-            System.err.println("UDP Client verbinding mislukt: " + e.getMessage());
+            System.err.println("UDP Client connection failed: " + e.getMessage());
             return false;
         }
     }
 
+    // Method to send a message to the server
     public void sendMessage(String message) {
         try {
             byte[] buffer = message.getBytes();
@@ -39,38 +41,41 @@ public class UDPClient {
             
             DatagramPacket packet = new DatagramPacket(combined, combined.length, address, port);
             socket.send(packet);
-            System.out.println("UDP Client heeft bericht verzonden: " + message);
+            System.out.println("UDP Client has sent message: " + message);
         } catch (IOException e) {
-            System.err.println("UDP Client kon bericht niet verzenden: " + e.getMessage());
+            System.err.println("UDP Client could not send message: " + e.getMessage());
         }
     }
 
+    // Method to receive a message from the server
     public String receiveMessage() {
         try {
             byte[] buffer = new byte[1024];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
             socket.receive(packet);
             String received = new String(packet.getData(), 0, packet.getLength());
-            System.out.println("UDP Client heeft bericht ontvangen: " + received);
+            System.out.println("UDP Client has received message: " + received);
             return received;
         } catch (IOException e) {
-            System.err.println("UDP Client kon bericht niet ontvangen: " + e.getMessage());
+            System.err.println("UDP Client could not receive message: " + e.getMessage());
             return null;
         }
     }
 
+    // Method to close the connection
     public void close() {
         socket.close();
-        System.out.println("UDP Client verbinding gesloten.");
+        System.out.println("UDP Client connection closed.");
     }
 
+    // Method to generate HMAC for message integrity
     private byte[] generateHMAC(byte[] message) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(secretKey);
             return mac.doFinal(message);
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            System.err.println("Fout bij het genereren van HMAC: " + e.getMessage());
+            System.err.println("Error generating HMAC: " + e.getMessage());
             return null;
         }
     }
