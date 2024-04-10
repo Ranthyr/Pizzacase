@@ -9,8 +9,8 @@ Het Pizzacase project is een geavanceerd systeem voor het bestellen van pizza's,
   - [Composite](#composite)
   - [Visitor](#visitor)
 - [Security Patterns](#Security-Patterns)
-  - [SSL Encryptie](#ssl-encryptie)
-  - [Message Authentication Code (MAC)](#message-authentication-code-mac)
+  - [Data Encryption](#Data-encryption)
+  - [Input Validation](#Input-Validation)
 
 ## Design Patterns
 
