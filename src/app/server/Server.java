@@ -5,26 +5,28 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
+
+import app.visitor.PizzaOrder;
 
 public class Server {
     private static Server instance;
     private Connection connection;
 
-    // Private constructor to prevent instantiation from outside
     private Server() {
         try {
             // Verbinding maken met de MySQL-database
-            connection = DriverManager.getConnection("jdbc:mysql://62.72.177.23:3306/s510_Pizzacase", "u510_VKj6VE7tj9", ".nhTFZw+TywKM10ovO8T.g3P");
+            connection = DriverManager.getConnection("jdbc:mysql://62.72.177.23:3306/s510_Pizzacase", "u510_VKj6VE7tj9",
+                    ".nhTFZw+TywKM10ovO8T.g3P");
             System.out.println("Verbonden met de database.");
-
-            // Maak de tabellen aan als ze nog niet bestaan
             createTables();
         } catch (SQLException e) {
             handleSQLException("Kan geen verbinding maken met de database.", e);
         }
     }
 
-    // Static method to get the instance of Server class
     public static synchronized Server getInstance() {
         if (instance == null) {
             instance = new Server();
@@ -32,35 +34,37 @@ public class Server {
         return instance;
     }
 
-    // Methode om een bestelling op te slaan in de database
-    public void saveOrderToDatabase(String customerName, String address, String orderDescription, String orderTime) {
-        System.out.println("Test2");
+    public boolean saveOrderToDatabase(String customerName, String address, String city, String postalCode, String orderDescription, String orderTime) {
         if (connection == null) {
             System.err.println("Databaseverbinding is niet beschikbaar.");
-            return;
+            return false;
         }
-
-        try {
-            System.out.println("Test");
-            // SQL-query om de bestelling in te voegen in de database
-            String sql = "INSERT INTO orders (customer_name, address, order_details, order_time) VALUES (?, ?, ?, ?)";
-            PreparedStatement statement = connection.prepareStatement(sql);
+    
+        // Zorg ervoor dat de SQL-query overeenkomt met je database schema
+        String sql = "INSERT INTO orders (customer_name, address, city, postal_code, order_details, order_time) VALUES (?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, customerName);
             statement.setString(2, address);
-            statement.setString(3, orderDescription);
-            statement.setString(4, orderTime);
+            statement.setString(3, city);
+            statement.setString(4, postalCode); // Zorg ervoor dat deze in de juiste volgorde staan
+            statement.setString(5, orderDescription);
+            statement.setString(6, orderTime);
+    
             int rowsInserted = statement.executeUpdate();
             if (rowsInserted > 0) {
                 System.out.println("Bestelling succesvol opgeslagen in de database.");
+                return true;
             } else {
                 System.err.println("Geen rijen ingevoegd in de database.");
+                return false;
             }
         } catch (SQLException e) {
             handleSQLException("Fout bij het opslaan van de bestelling in de database.", e);
+            return false;
         }
     }
+    
 
-    // Methode om de verbinding met de database te sluiten
     public void closeConnection() {
         try {
             if (connection != null && !connection.isClosed()) {
@@ -72,25 +76,50 @@ public class Server {
         }
     }
 
-    // Methode om de databaseverbinding op te halen
-    public Connection getConnection() {
-        return connection;
-    }
-
-    // Methode om de tabellen aan te maken als ze nog niet bestaan
     private void createTables() {
-        try {
-            Statement statement = connection.createStatement();
-            statement.executeUpdate("CREATE TABLE IF NOT EXISTS orders (id INT AUTO_INCREMENT PRIMARY KEY, customer_name VARCHAR(255), address TEXT, order_details TEXT, order_time VARCHAR(255))");
-            // Voeg hier meer SQL-opdrachten toe om andere tabellen aan te maken indien nodig
+        try (Statement statement = connection.createStatement()) {
+            String sqlCreate = "CREATE TABLE IF NOT EXISTS orders (" +
+                               "id INT AUTO_INCREMENT PRIMARY KEY, " +
+                               "customer_name VARCHAR(255), " +
+                               "address TEXT, " +
+                               "city VARCHAR(255), " + // Toevoegen van city kolom
+                               "postal_code VARCHAR(20), " + // Toevoegen van postal_code kolom
+                               "order_details TEXT, " +
+                               "order_time VARCHAR(255))";
+            statement.executeUpdate(sqlCreate);
+            System.out.println("Tabel 'orders' is aangemaakt of bestaat al.");
         } catch (SQLException e) {
             handleSQLException("Fout bij het aanmaken van tabellen.", e);
         }
     }
+    
 
-    // Methode om SQLException af te handelen
     private void handleSQLException(String message, SQLException e) {
         System.err.println(message + " Error: " + e.getMessage());
-        e.printStackTrace(); // Print de stacktrace voor gedetailleerde foutinformatie
+        e.printStackTrace();
+    }
+
+    public Connection getConnection() {
+        return connection;
+    }
+
+    public List<PizzaOrder> fetchOrders() {
+        List<PizzaOrder> orders = new ArrayList<>();
+        try (Statement statement = getConnection().createStatement();
+             ResultSet resultSet = statement.executeQuery("SELECT * FROM orders")) {
+            while (resultSet.next()) {
+                String customerName = resultSet.getString("customer_name");
+                String address = resultSet.getString("address");
+                String city = resultSet.getString("city");
+                String postalCode = resultSet.getString("postal_code");
+                String orderDetails = resultSet.getString("order_details");
+                String orderTime = resultSet.getString("order_time");
+
+                orders.add(new PizzaOrder(customerName, address, city, postalCode, orderDetails, orderTime));
+            }
+        } catch (SQLException e) {
+            System.err.println("Fout bij het ophalen van bestellingen uit de database: " + e.getMessage());
+        }
+        return orders;
     }
 }

@@ -8,7 +8,7 @@ import java.util.Date;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import network.tcp.TCPClient;
+import network.tcp.TCPSSLClient;
 import network.udp.UDPClient;
 
 public class ClientGUI {
@@ -16,18 +16,16 @@ public class ClientGUI {
     private CardLayout cardLayout;
     private JPanel cardPanel;
 
-    private ConnectionPanel connectionPanel;
-    private OrderPanel orderPanel;
-    private AddressPanel addressPanel;
-    private ConfirmPanel confirmPanel;
+    private GUIComponent connectionPanel;
+    private GUIComponent orderPanel;
+    private GUIComponent addressPanel;
+    private GUIComponent confirmPanel;
 
-    private TCPClient tcpClient;
+    private TCPSSLClient tcpClient;
     private UDPClient udpClient;
 
     private String orderDetails = "";
     private String addressDetails = "";
-
-    private boolean orderSent = false; // Flag om te controleren of de bestelling al is verzonden
 
     public ClientGUI() {
         initializeGUI();
@@ -46,10 +44,10 @@ public class ClientGUI {
         addressPanel = new AddressPanel(this);
         confirmPanel = new ConfirmPanel(this);
 
-        cardPanel.add(connectionPanel, "ConnectionPanel");
-        cardPanel.add(orderPanel, "OrderPanel");
-        cardPanel.add(addressPanel, "AddressPanel");
-        cardPanel.add(confirmPanel, "ConfirmPanel");
+        cardPanel.add((JPanel) connectionPanel.getComponent(), "ConnectionPanel");
+        cardPanel.add((JPanel) orderPanel.getComponent(), "OrderPanel");
+        cardPanel.add((JPanel) addressPanel.getComponent(), "AddressPanel");
+        cardPanel.add((JPanel) confirmPanel.getComponent(), "ConfirmPanel");
 
         frame.add(cardPanel);
         cardLayout.show(cardPanel, "ConnectionPanel");
@@ -58,14 +56,16 @@ public class ClientGUI {
     }
 
     public void startTCPConnection() {
-        tcpClient = new TCPClient();
+        tcpClient = new TCPSSLClient();
         tcpClient.connectToServer("localhost", 5000);
     }
 
     public void startUDPConnection() {
         udpClient = new UDPClient();
-        udpClient.connectToServer("localhost", 5001);
+        String sharedSecretKey = "geheimeSleutel"; 
+        udpClient.connectToServer("localhost", 5001, sharedSecretKey);
     }
+    
 
     public void sendOrder(String order) {
         orderDetails = order;
@@ -78,8 +78,9 @@ public class ClientGUI {
         }
     }
     
-    public void sendAddress(String address) {
-        addressDetails = address;
+    public void sendAddress(String name, String street, String city, String postalCode) {
+        // Formatteer de adresdetails zodat elk onderdeel op een nieuwe regel staat
+        addressDetails = String.format("%s\n%s\n%s\n%s", name, street, city, postalCode);
         if (!orderDetails.isEmpty()) {
             String completeOrder = addressDetails + "\n" + orderDetails;
             sendMessageToServer(completeOrder);
@@ -113,12 +114,16 @@ public class ClientGUI {
     }
 
     private void navigateToConfirmPanel() {
-        confirmPanel.setOrderDetails(orderDetails);
-        confirmPanel.setAddressDetails(addressDetails);
+        ((ConfirmPanel)confirmPanel).setOrderDetails(orderDetails);
+        ((ConfirmPanel)confirmPanel).setAddressDetails(addressDetails);
         navigateToPanel("ConfirmPanel");
     }
 
-    class ConnectionPanel extends JPanel {
+    interface GUIComponent {
+        Component getComponent();
+    }
+
+    class ConnectionPanel extends JPanel implements GUIComponent {
         private JComboBox<String> connectionTypeComboBox;
         private JButton connectButton;
 
@@ -141,9 +146,13 @@ public class ClientGUI {
             });
             add(connectButton);
         }
+
+        public Component getComponent() {
+            return this;
+        }
     }
 
-    class OrderPanel extends JPanel {
+    class OrderPanel extends JPanel implements GUIComponent {
         private DefaultTableModel tableModel;
         private JTable orderTable;
         private JComboBox<String> pizzaComboBox;
@@ -253,17 +262,18 @@ public class ClientGUI {
             }
             return order.toString();
         }
+
+        public Component getComponent() {
+            return this;
+        }
     }
 
-    class AddressPanel extends JPanel {
+    class AddressPanel extends JPanel implements GUIComponent {
         private final JTextField nameField;
         private final JTextField addressField;
         private final JTextField cityField;
         private final JTextField postalCodeField;
-        private ClientGUI gui;
-    
         public AddressPanel(ClientGUI gui) {
-            this.gui = gui;
             setLayout(new GridLayout(5, 2, 10, 10));
     
             add(new JLabel("Naam:"));
@@ -284,23 +294,23 @@ public class ClientGUI {
     
             JButton nextButton = new JButton("Volgende");
             nextButton.addActionListener(e -> {
-                String address = String.format("%s\n%s\n%s\n%s",
-                        nameField.getText(),
-                        addressField.getText(),
-                        cityField.getText(),
-                        postalCodeField.getText());
-                gui.sendAddress(address);
+                String name = nameField.getText().trim();
+                String street = addressField.getText().trim();
+                String city = cityField.getText().trim();
+                String postalCode = postalCodeField.getText().trim();
+                gui.sendAddress(name, street, city, postalCode);
             });
             add(nextButton);
         }
+
+        public Component getComponent() {
+            return this;
+        }
     }
 
-    class ConfirmPanel extends JPanel {
+    class ConfirmPanel extends JPanel implements GUIComponent {
         private final JTextArea confirmTextArea;
-        private ClientGUI gui;
-
         public ConfirmPanel(ClientGUI gui) {
-            this.gui = gui;
             setLayout(new BorderLayout());
             confirmTextArea = new JTextArea();
             confirmTextArea.setEditable(false);
@@ -317,6 +327,10 @@ public class ClientGUI {
 
         public void setAddressDetails(String address) {
             confirmTextArea.append("\n\nAdresgegevens:\n" + address);
+        }
+
+        public Component getComponent() {
+            return this;
         }
     }
 
