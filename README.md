@@ -79,7 +79,7 @@ class AddressPanel extends JPanel implements GUIComponent {
 class ConfirmPanel extends JPanel implements GUIComponent {
     // Implementatie...
 }
-
+```
 ## Voordelen
 
 - **Uniformiteit en Flexibiliteit:** Door alle GUI-componenten door dezelfde interface te laten implementeren, kunnen we gemakkelijk nieuwe schermen of panelen toevoegen zonder de algehele systeemarchitectuur te verstoren.
