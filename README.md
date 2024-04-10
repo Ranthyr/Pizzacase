@@ -8,7 +8,7 @@ Het Pizzacase project is een geavanceerd systeem voor het bestellen van pizza's,
   - [Singleton](#singleton)
   - [Composite](#composite)
   - [Visitor](#visitor)
-- [Veiligheidsmechanismen](#veiligheidsmechanismen)
+- [Security Patterns](#Security-Patterns)
   - [SSL Encryptie](#ssl-encryptie)
   - [Message Authentication Code (MAC)](#message-authentication-code-mac)
 
@@ -125,7 +125,7 @@ public class OrderStatisticsVisitor implements OrderVisitor {
 - **Uitbreidbaarheid:** Het patroon maakt het gemakkelijk om nieuwe operaties op de objectstructuur toe te voegen zonder deze te wijzigen, wat de uitbreidbaarheid van de applicatie verbetert.
 - **Flexibiliteit:** Verschillende bezoekers kunnen worden gedefinieerd om verschillende operaties uit te voeren zonder dat de objecten die bezocht worden gewijzigd hoeven te worden.
 
-## Veiligheidsmechanismen
+## Security Patterns
 
 ### Data Encryption (Gegevensversleuteling)
 
