@@ -158,3 +158,44 @@ Het `keystore.jks` bestand bevat de privésleutel en het publieke certificaat va
 - **Vertrouwelijkheid:** Door alle communicatie te versleutelen, zorgt SSL ervoor dat gevoelige informatie beschermd is tegen onderschepping door derden.
 - **Integriteit:** SSL biedt mechanismen om te controleren of de gegevens niet zijn gewijzigd tijdens de overdracht, waardoor de integriteit van de verzonden informatie wordt gewaarborgd.
 - **Authenticatie:** Door gebruik te maken van certificaten kan SSL de identiteit van zowel de client als de server verifiëren, wat bijdraagt aan een veiligere communicatie.
+
+### Message Authentication Code (MAC)
+
+#### Toepassing in het project
+
+In het Pizzacase-project wordt de Message Authentication Code (MAC) gebruikt als een middel om de integriteit en authenticiteit van de berichten te verifiëren die tussen de `UDPClient` en `UDPServer` worden uitgewisseld. Dit zorgt ervoor dat de gegevens niet zijn gewijzigd tijdens de overdracht en bevestigt dat het bericht afkomstig is van de legitieme bron.
+
+#### Implementatie
+
+De implementatie maakt gebruik van de HmacSHA256-algoritme voor het genereren en verifiëren van de MAC. Wanneer de `UDPClient` een bericht verzendt, genereert het een HMAC op basis van het bericht en een gedeelde geheime sleutel. Dit MAC wordt dan toegevoegd aan het bericht voordat het wordt verzonden. Bij ontvangst van het bericht scheidt de `UDPServer` de MAC van het bericht en genereert een nieuwe MAC op basis van het ontvangen bericht en de gedeelde geheime sleutel. Als de nieuw gegenereerde MAC overeenkomt met de ontvangen MAC, is het bericht geverifieerd.
+
+```java
+private byte[] generateHMAC(byte[] message) {
+    try {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(secretKey);
+        return mac.doFinal(message);
+    } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+        System.err.println("Fout bij het genereren van HMAC: " + e.getMessage());
+        return null;
+    }
+}
+
+private boolean verifyHMAC(byte[] message, byte[] receivedMac) {
+    try {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(secretKey);
+        byte[] calculatedMac = mac.doFinal(message);
+        return Arrays.equals(calculatedMac, receivedMac);
+    } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+        System.err.println("Fout bij het verifiëren van HMAC: " + e.getMessage());
+        return false;
+    }
+}
+```
+
+#### Voordelen
+
+- **Gegevensintegriteit:** MAC zorgt ervoor dat de gegevens tijdens de overdracht niet zijn gewijzigd, waardoor de integriteit van de communicatie wordt gewaarborgd.
+- **Authenticatie:** Door de overeenkomst tussen de verzonden en berekende MAC, wordt bevestigd dat het bericht afkomstig is van de verwachte bron.
+- **Veiligheid:** De implementatie van MAC met een gedeelde geheime sleutel voegt een extra laag van veiligheid toe, waardoor het moeilijker wordt voor onbevoegden om de communicatie te vervalsen.
