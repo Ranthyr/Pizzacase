@@ -42,7 +42,7 @@ public class Server {
         return instance;
     }
 }
-
+```
 ## Voordelen
 
 - **Enkele Instantie:** Verzekert dat slechts één instantie van de `Server` klasse wordt aangemaakt.
