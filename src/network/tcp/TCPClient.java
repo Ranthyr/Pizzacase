@@ -20,24 +20,34 @@ public class TCPClient {
             System.out.println("Verbonden met server.");
             return true;
         } catch (IOException e) {
-            System.err.println("Kan niet verbinden met server: " + e.getMessage());
+            handleIOException("Kan niet verbinden met server.", e);
             return false;
         }
     }
 
     public void sendMessage(String message) {
+        if (out == null) {
+            System.err.println("Verbinding met de server is niet tot stand gebracht.");
+            return;
+        }
+
         System.out.println("Versturen bericht: " + message);
         out.println(message);
     }
 
     public String getResponse() {
+        if (in == null) {
+            System.err.println("Verbinding met de server is niet tot stand gebracht.");
+            return null;
+        }
+
         try {
             System.out.println("Wachten op respons van de server...");
             String response = in.readLine();
             System.out.println("Respons ontvangen: " + response);
             return response;
         } catch (IOException e) {
-            System.err.println("Fout bij het ontvangen van de respons: " + e.getMessage());
+            handleIOException("Fout bij het ontvangen van de respons.", e);
             return null;
         }
     }
@@ -55,7 +65,12 @@ public class TCPClient {
             }
             System.out.println("Verbinding gesloten.");
         } catch (IOException e) {
-            System.err.println("Fout bij het sluiten van de verbinding: " + e.getMessage());
+            handleIOException("Fout bij het sluiten van de verbinding.", e);
         }
+    }
+
+    private void handleIOException(String message, IOException e) {
+        System.err.println(message + " Error: " + e.getMessage());
+        e.printStackTrace(); // Print de stacktrace voor gedetailleerde foutinformatie
     }
 }

@@ -1,5 +1,7 @@
 package network.udp;
 
+import app.server.Server;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -30,9 +32,24 @@ public class UDPServer implements Runnable {
                 String received = new String(packet.getData(), 0, packet.getLength());
                 System.out.println("UDP Server heeft ontvangen van client: " + received);
 
-                // Voer de actie uit gebaseerd op het ontvangen bericht
-                // (bijv. opslaan van bestelling, etc.)
+                // Verwerk de ontvangen gegevens
+                String[] lines = received.split("\n");
+                if (lines.length >= 6) {
+                    String customerName = lines[0];
+                    String address = lines[1];
+                    StringBuilder orderDetailsBuilder = new StringBuilder();
+                    for (int i = 2; i < lines.length - 1; i++) {
+                        orderDetailsBuilder.append(lines[i]).append("\n");
+                    }
+                    String orderDetails = orderDetailsBuilder.toString().trim();
+                    String orderTime = lines[lines.length - 1];
                 
+                    // Sla de bestelling op in de database
+                    Server.getInstance().saveOrderToDatabase(customerName, address, orderDetails, orderTime);
+                } else {
+                    System.err.println("Ongeldige bestelling ontvangen.");
+                }
+
                 // Reageer op de client
                 String response = "Order bevestigd: Dank u!";
                 byte[] responseBytes = response.getBytes();

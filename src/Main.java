@@ -2,7 +2,6 @@ import app.gui.ClientGUI;
 import app.gui.ServerGUI;
 import network.tcp.TCPServer;
 import network.udp.UDPServer;
-import app.server.Server;
 
 public class Main {
     public static void main(String[] args) {
@@ -17,13 +16,9 @@ public class Main {
             ClientGUI clientGUI = new ClientGUI();
         }).start();
 
-        // Maak en toon de server GUI
-        ServerGUI serverGUI = new ServerGUI();
-        serverGUI.show();
-
-        // Start de server met de database connectie
-        Server.getInstance().start();
+        // Maak en toon de server GUI in een aparte thread
+        new Thread(() -> {
+            ServerGUI serverGUI = new ServerGUI();
+        }).start();
     }
 }
-
-

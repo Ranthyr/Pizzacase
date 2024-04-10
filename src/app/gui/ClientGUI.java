@@ -2,42 +2,37 @@ package app.gui;
 
 import javax.swing.*;
 import java.awt.*;
+import javax.swing.table.*;
 import java.text.SimpleDateFormat;
-import java.util.Enumeration;
+import java.util.Date;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import network.tcp.TCPClient;
 import network.udp.UDPClient;
-import network.udp.UDPServer;
-import java.util.Date;
-
 
 public class ClientGUI {
-    // Hoofdcomponenten
     private JFrame frame;
     private CardLayout cardLayout;
     private JPanel cardPanel;
 
-    // Paneelklassen
     private ConnectionPanel connectionPanel;
     private OrderPanel orderPanel;
     private AddressPanel addressPanel;
     private ConfirmPanel confirmPanel;
 
-    // Netwerk clients
     private TCPClient tcpClient;
     private UDPClient udpClient;
 
-    // Bestel- en adresgegevens
     private String orderDetails = "";
     private String addressDetails = "";
 
-    // Constructor
+    private boolean orderSent = false; // Flag om te controleren of de bestelling al is verzonden
+
     public ClientGUI() {
         initializeGUI();
     }
 
-    // Hoofd initialisatie methode
     public void initializeGUI() {
         frame = new JFrame("Pizza Bestel Systeem");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -62,48 +57,65 @@ public class ClientGUI {
         frame.setVisible(true);
     }
 
-    // Methode om TCP-verbinding te starten
     public void startTCPConnection() {
         tcpClient = new TCPClient();
         tcpClient.connectToServer("localhost", 5000);
-        cardLayout.show(cardPanel, "OrderPanel");
     }
 
-    // Methode om UDP-verbinding te starten
     public void startUDPConnection() {
         udpClient = new UDPClient();
-        udpClient.connectToServer("localhost", UDPServer.PORT);
-        cardLayout.show(cardPanel, "OrderPanel");
+        udpClient.connectToServer("localhost", 5001);
     }
 
-    // Methode om de bestelling te versturen en naar het adrespaneel te navigeren
-public void sendOrder(String order) {
-    // Voeg datum en tijd toe aan de bestelling
-    String timeStamp = new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date());
-    orderDetails = order.trim() + "\n" + timeStamp; // Trim om overtollige lege regels te verwijderen
-
-    cardLayout.show(cardPanel, "AddressPanel");
-}
-
-public void sendAddress(String address) {
-    addressDetails = address;
-    String finalOrder = addressDetails + "\n" + orderDetails;
-
-    // Verstuur de bestelling naar de server
-    if (tcpClient != null) {
-        tcpClient.sendMessage(finalOrder);
-    } else if (udpClient != null) {
-        udpClient.sendMessage(finalOrder);
+    public void sendOrder(String order) {
+        orderDetails = order;
+        if (!addressDetails.isEmpty()) {
+            String completeOrder = addressDetails + "\n" + orderDetails;
+            sendMessageToServer(completeOrder);
+            navigateToConfirmPanel();
+        } else {
+            navigateToAddressPanel();
+        }
+    }
+    
+    public void sendAddress(String address) {
+        addressDetails = address;
+        if (!orderDetails.isEmpty()) {
+            String completeOrder = addressDetails + "\n" + orderDetails;
+            sendMessageToServer(completeOrder);
+            navigateToConfirmPanel();
+        }
     }
 
-    // Ga naar het bevestigingspaneel
-    confirmPanel.setOrderDetails(finalOrder);
-    cardLayout.show(cardPanel, "ConfirmPanel");
-}
+    public void navigateToNextPanel() {
+        cardLayout.next(cardPanel);
+    }
 
-    // Methode om de applicatie te starten
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new ClientGUI());
+    public void navigateToPanel(String panelName) {
+        cardLayout.show(cardPanel, panelName);
+    }
+
+    private void sendMessageToServer(String message) {
+        if (tcpClient != null) {
+            System.out.println("[TCP Client] Bericht verzenden naar server: " + message);
+            tcpClient.sendMessage(message);
+        } else if (udpClient != null) {
+            System.out.println("[UDP Client] Bericht verzenden naar server: " + message);
+            udpClient.sendMessage(message);
+        } else {
+            System.err.println("Geen actieve verbinding met de server.");
+        }
+    }
+
+    private void navigateToAddressPanel() {
+        System.out.println("Navigeren naar Adresgegevens panel...");
+        navigateToNextPanel();
+    }
+
+    private void navigateToConfirmPanel() {
+        confirmPanel.setOrderDetails(orderDetails);
+        confirmPanel.setAddressDetails(addressDetails);
+        navigateToPanel("ConfirmPanel");
     }
 
     class ConnectionPanel extends JPanel {
@@ -125,101 +137,121 @@ public void sendAddress(String address) {
                 } else {
                     gui.startUDPConnection();
                 }
+                gui.navigateToNextPanel();
             });
             add(connectButton);
         }
     }
 
     class OrderPanel extends JPanel {
-        private final ClientGUI gui;
-        private final JTextArea orderTextArea;
-        private final Map<String, JCheckBox> toppingsCheckBoxes;
-        private final ButtonGroup pizzaButtonGroup; // ButtonGroup voor de pizza selectie
+        private DefaultTableModel tableModel;
+        private JTable orderTable;
+        private JComboBox<String> pizzaComboBox;
+        private Map<String, JCheckBox> toppingsCheckBoxes = new HashMap<>();
+        private JButton addPizzaButton;
+        private JButton removePizzaButton;
+        private JButton nextButton;
 
         public OrderPanel(ClientGUI gui) {
-            this.gui = gui;
-            this.setLayout(new BorderLayout(10, 10));
-            this.toppingsCheckBoxes = new HashMap<>();
-            this.pizzaButtonGroup = new ButtonGroup(); // Initialiseer de ButtonGroup
+            setLayout(new BorderLayout());
 
-            // Pizza selectie paneel
-            JPanel pizzaSelectionPanel = new JPanel();
-            pizzaSelectionPanel.setLayout(new BoxLayout(pizzaSelectionPanel, BoxLayout.Y_AXIS));
-            pizzaSelectionPanel.setBorder(BorderFactory.createTitledBorder("Kies uw pizza:"));
+            // Pizza selector
+            String[] pizzas = {"Calzone", "Diavolo", "Mozzarella"}; // Voorbeeldpizza's
+            pizzaComboBox = new JComboBox<>(pizzas);
 
-            String[] pizzas = { "Margherita", "Pepperoni", "Hawaiian" };
-            for (String pizza : pizzas) {
-                JRadioButton pizzaButton = new JRadioButton(pizza);
-                pizzaButton.setActionCommand(pizza); // Gebruik de pizzanaam als actiecommando
-                pizzaButtonGroup.add(pizzaButton); // Voeg de button toe aan de groep
-                pizzaSelectionPanel.add(pizzaButton);
-            }
-
-            // Toppings selectie paneel
+            // Toppings checkboxes
             JPanel toppingsPanel = new JPanel();
             toppingsPanel.setLayout(new BoxLayout(toppingsPanel, BoxLayout.Y_AXIS));
-            toppingsPanel.setBorder(BorderFactory.createTitledBorder("Extra toppings:"));
-
-            String[] toppings = { "Mushrooms", "Olives", "Peppers" };
+            String[] toppings = {"Extra Cheese", "Mushrooms", "Olives", "Peppers"}; // Voorbeeldtoppings
             for (String topping : toppings) {
                 JCheckBox checkBox = new JCheckBox(topping);
-                toppingsPanel.add(checkBox);
                 toppingsCheckBoxes.put(topping, checkBox);
+                toppingsPanel.add(checkBox);
             }
 
-            // Order TextArea
-            orderTextArea = new JTextArea(5, 20);
-            orderTextArea.setEditable(false);
-            JScrollPane scrollPane = new JScrollPane(orderTextArea);
-            scrollPane.setBorder(BorderFactory.createTitledBorder("Winkelmand"));
+            // Order table setup
+            String[] columnNames = {"Pizza", "Quantity", "Toppings"};
+            tableModel = new DefaultTableModel(columnNames, 0);
+            orderTable = new JTable(tableModel) {
+                public boolean isCellEditable(int row, int column) {
+                    return false;
+                }
+            };
 
-            // Button panel
+            addPizzaButton = new JButton("Add Pizza");
+            addPizzaButton.addActionListener(e -> addPizza());
+
+            removePizzaButton = new JButton("Remove Pizza");
+            removePizzaButton.addActionListener(e -> removePizza());
+
+            nextButton = new JButton("Next");
+            nextButton.addActionListener(e -> {
+                String order = compileOrder();
+                if (!order.isEmpty()) {
+                    gui.sendOrder(order);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Selecteer minstens één pizza.", "Waarschuwing", JOptionPane.WARNING_MESSAGE);
+                }
+            });
+
             JPanel buttonPanel = new JPanel();
-            buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-
-            JButton addToOrderButton = new JButton("Voeg toe aan bestelling");
-            addToOrderButton.addActionListener(e -> updateOrder());
-
-            JButton nextButton = new JButton("Ga naar adresgegevens");
-            nextButton.addActionListener(e -> gui.sendOrder(orderTextArea.getText()));
-
-            buttonPanel.add(addToOrderButton);
+            buttonPanel.add(addPizzaButton);
+            buttonPanel.add(removePizzaButton);
             buttonPanel.add(nextButton);
 
-            // Add components to OrderPanel
-            this.add(pizzaSelectionPanel, BorderLayout.WEST);
-            this.add(toppingsPanel, BorderLayout.CENTER);
-            this.add(scrollPane, BorderLayout.EAST);
-            this.add(buttonPanel, BorderLayout.SOUTH);
+            add(pizzaComboBox, BorderLayout.NORTH);
+            add(new JScrollPane(orderTable), BorderLayout.CENTER);
+            add(toppingsPanel, BorderLayout.WEST);
+            add(buttonPanel, BorderLayout.SOUTH);
         }
 
-        private void updateOrder() {
-            // Vind de geselecteerde pizza en voeg deze toe aan de bestelling met het aantal
-            Enumeration<AbstractButton> pizzaButtons = pizzaButtonGroup.getElements();
-            while (pizzaButtons.hasMoreElements()) {
-                JRadioButton pizzaButton = (JRadioButton) pizzaButtons.nextElement();
-                if (pizzaButton.isSelected()) {
-                    orderTextArea.append(pizzaButton.getText() + "\n1\n"); // Voeg 1 toe voor het aantal pizza's
-                }
-            }
-
-            // Voeg het aantal geselecteerde toppings toe
-            int toppingsCount = 0;
+        private void addPizza() {
+            String selectedPizza = (String) pizzaComboBox.getSelectedItem();
+            int quantity = 1; // Standaardhoeveelheid
             StringBuilder toppingsBuilder = new StringBuilder();
-            for (Map.Entry<String, JCheckBox> toppingEntry : toppingsCheckBoxes.entrySet()) {
-                if (toppingEntry.getValue().isSelected()) {
-                    toppingsBuilder.append(toppingEntry.getKey()).append("\n");
-                    toppingsCount++;
-                    toppingEntry.getValue().setSelected(false);
-                }
+
+            // Gebruik isSelected() op elke JCheckBox om te controleren of deze is geselecteerd
+            toppingsCheckBoxes.entrySet().stream()
+                .filter(entry -> entry.getValue().isSelected())
+                .forEach(entry -> {
+                    toppingsBuilder.append(entry.getKey()).append(", ");
+                    entry.getValue().setSelected(false); // Deselecteer de checkbox na gebruik
+                });
+
+            String toppings = toppingsBuilder.toString();
+            if (!toppings.isEmpty()) {
+                toppings = toppings.substring(0, toppings.length() - 2); // Verwijder de laatste komma en spatie
             }
 
-            if (toppingsCount > 0) {
-                orderTextArea.append(toppingsCount + "\n" + toppingsBuilder.toString());
+            tableModel.addRow(new Object[]{selectedPizza, quantity, toppings});
+        }
+
+        private void removePizza() {
+            int selectedRow = orderTable.getSelectedRow();
+            if (selectedRow != -1) {
+                tableModel.removeRow(selectedRow);
             } else {
-                orderTextArea.append("0\n"); // Als er geen toppings zijn geselecteerd
+                JOptionPane.showMessageDialog(this, "Selecteer een rij om te verwijderen.", "Waarschuwing", JOptionPane.WARNING_MESSAGE);
             }
-            orderTextArea.append("\n"); // Voeg een lege regel toe na elke bestelling
+        }
+
+        private String compileOrder() {
+            StringBuilder order = new StringBuilder();
+            boolean hasOrder = false;
+            for (int i = 0; i < tableModel.getRowCount(); i++) {
+                order.append(tableModel.getValueAt(i, 0)).append("\n");
+                order.append(tableModel.getValueAt(i, 1)).append("\n");
+                if (!tableModel.getValueAt(i, 2).equals("")) {
+                    Arrays.stream(((String) tableModel.getValueAt(i, 2)).split(", ")).forEach(topping -> order.append(topping).append("\n"));
+                    hasOrder = true;
+                }
+                order.append("\n");
+            }
+            if (hasOrder) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+                order.append(dateFormat.format(new Date())); // Voeg de huidige tijd toe
+            }
+            return order.toString();
         }
     }
 
@@ -228,29 +260,30 @@ public void sendAddress(String address) {
         private final JTextField addressField;
         private final JTextField cityField;
         private final JTextField postalCodeField;
-
+        private ClientGUI gui;
+    
         public AddressPanel(ClientGUI gui) {
+            this.gui = gui;
             setLayout(new GridLayout(5, 2, 10, 10));
-
+    
             add(new JLabel("Naam:"));
             nameField = new JTextField();
             add(nameField);
-
+    
             add(new JLabel("Adres:"));
             addressField = new JTextField();
             add(addressField);
-
+    
             add(new JLabel("Stad:"));
             cityField = new JTextField();
             add(cityField);
-
+    
             add(new JLabel("Postcode:"));
             postalCodeField = new JTextField();
             add(postalCodeField);
-
+    
             JButton nextButton = new JButton("Volgende");
             nextButton.addActionListener(e -> {
-                // Gebruik direct de tekstvelden zonder labels voor de format
                 String address = String.format("%s\n%s\n%s\n%s",
                         nameField.getText(),
                         addressField.getText(),
@@ -264,15 +297,17 @@ public void sendAddress(String address) {
 
     class ConfirmPanel extends JPanel {
         private final JTextArea confirmTextArea;
+        private ClientGUI gui;
 
         public ConfirmPanel(ClientGUI gui) {
+            this.gui = gui;
             setLayout(new BorderLayout());
             confirmTextArea = new JTextArea();
             confirmTextArea.setEditable(false);
             add(new JScrollPane(confirmTextArea), BorderLayout.CENTER);
 
             JButton closeButton = new JButton("Sluit");
-            closeButton.addActionListener(e -> System.exit(0));
+            closeButton.addActionListener(e -> gui.navigateToPanel("ConnectionPanel"));
             add(closeButton, BorderLayout.SOUTH);
         }
 
@@ -283,5 +318,9 @@ public void sendAddress(String address) {
         public void setAddressDetails(String address) {
             confirmTextArea.append("\n\nAdresgegevens:\n" + address);
         }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new ClientGUI());
     }
 }
