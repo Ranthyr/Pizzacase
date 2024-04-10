@@ -43,7 +43,7 @@ public class Server {
     }
 }
 ```
-## Voordelen
+#### Voordelen
 
 - **Enkele Instantie:** Verzekert dat slechts één instantie van de `Server` klasse wordt aangemaakt.
 - **Makkelijke Toegang:** Biedt een gemakkelijke toegang tot de `Server` instantie vanuit elke plek in de applicatie.
@@ -80,7 +80,7 @@ class ConfirmPanel extends JPanel implements GUIComponent {
     // Implementatie...
 }
 ```
-## Voordelen
+#### Voordelen
 
 - **Uniformiteit en Flexibiliteit:** Door alle GUI-componenten door dezelfde interface te laten implementeren, kunnen we gemakkelijk nieuwe schermen of panelen toevoegen zonder de algehele systeemarchitectuur te verstoren.
 - **Eenvoudig Beheer:** Het beheren, toevoegen of verwijderen van GUI-componenten wordt gestroomlijnd, wat bijdraagt aan een schone en onderhoudbare codebasis.
