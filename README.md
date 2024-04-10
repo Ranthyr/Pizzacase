@@ -190,8 +190,6 @@ private boolean verifyHMAC(byte[] message, byte[] receivedMac) {
 
 #### Voordelen
 
-- **Vertrouwelijkheid:** SSL en MAC helpen om de vertrouwelijkheid van de gege
-
-vens te bewaren door te verzekeren dat alleen geautoriseerde partijen toegang hebben tot de informatie.
+- **Vertrouwelijkheid:** SSL en MAC helpen om de vertrouwelijkheid van de gegevens te bewaren door te verzekeren dat alleen geautoriseerde partijen toegang hebben tot de informatie.
 - **Integriteit:** Ze garanderen dat de data niet is gewijzigd tijdens de overdracht, waardoor de betrouwbaarheid van de communicatie tussen client en server wordt gewaarborgd.
 - **Authenticatie:** SSL biedt een mechanisme voor het verifiëren van de identiteit van de partijen, terwijl MAC de authenticiteit van de verzonden berichten verifieert.
