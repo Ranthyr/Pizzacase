@@ -10,13 +10,16 @@ public class UDPClient {
     private InetAddress address;
     private int port;
 
-    public void connectToServer(String host, int port) {
+    public boolean connectToServer(String host, int port) {
         try {
             socket = new DatagramSocket();
             address = InetAddress.getByName(host);
             this.port = port;
+            System.out.println("UDP Client verbonden met " + host + " op poort " + port);
+            return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("UDP Client verbinding mislukt: " + e.getMessage());
+            return false;
         }
     }
 
@@ -25,8 +28,9 @@ public class UDPClient {
             byte[] buffer = message.getBytes();
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, address, port);
             socket.send(packet);
+            System.out.println("UDP Client heeft bericht verzonden: " + message);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("UDP Client kon bericht niet verzenden: " + e.getMessage());
         }
     }
 
@@ -35,16 +39,17 @@ public class UDPClient {
             byte[] buffer = new byte[1024];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
             socket.receive(packet);
-            return new String(packet.getData(), 0, packet.getLength());
+            String received = new String(packet.getData(), 0, packet.getLength());
+            System.out.println("UDP Client heeft bericht ontvangen: " + received);
+            return received;
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("UDP Client kon bericht niet ontvangen: " + e.getMessage());
             return null;
         }
     }
 
     public void close() {
-        if (socket != null) {
-            socket.close();
-        }
+        socket.close();
+        System.out.println("UDP Client verbinding gesloten.");
     }
 }

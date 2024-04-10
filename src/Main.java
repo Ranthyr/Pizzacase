@@ -15,7 +15,6 @@ public class Main {
         // Maak en toon de klant GUI in een aparte thread
         new Thread(() -> {
             ClientGUI clientGUI = new ClientGUI();
-            clientGUI.createAndShowGUI();
         }).start();
 
         // Maak en toon de server GUI

@@ -11,25 +11,33 @@ public class TCPClient {
     private PrintWriter out;
     private BufferedReader in;
 
-    public void connectToServer(String host, int port) {
+    public boolean connectToServer(String host, int port) {
         try {
+            System.out.println("Verbinden met server op " + host + ":" + port);
             socket = new Socket(host, port);
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            System.out.println("Verbonden met server.");
+            return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Kan niet verbinden met server: " + e.getMessage());
+            return false;
         }
     }
 
     public void sendMessage(String message) {
+        System.out.println("Versturen bericht: " + message);
         out.println(message);
     }
 
     public String getResponse() {
         try {
-            return in.readLine();
+            System.out.println("Wachten op respons van de server...");
+            String response = in.readLine();
+            System.out.println("Respons ontvangen: " + response);
+            return response;
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Fout bij het ontvangen van de respons: " + e.getMessage());
             return null;
         }
     }
@@ -45,8 +53,9 @@ public class TCPClient {
             if (in != null) {
                 in.close();
             }
+            System.out.println("Verbinding gesloten.");
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Fout bij het sluiten van de verbinding: " + e.getMessage());
         }
     }
 }

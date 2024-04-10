@@ -1,35 +1,40 @@
 package network.tcp;
 
-import app.server.Server;
-
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 public class TCPServer implements Runnable {
-    public static final int PORT = 0;
+    private static final int PORT = 5000; // Aangepast van 0 naar een specifieke poort
 
     @Override
     public void run() {
-        try (ServerSocket serverSocket = new ServerSocket(5000)) {
-            System.out.println("TCP Server started on port 5000");
+        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
+            System.out.println("TCP Server gestart op poort " + PORT);
             while (true) {
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("Client connected: " + clientSocket);
-                try (ObjectInputStream inputStream = new ObjectInputStream(clientSocket.getInputStream())) {
-                    String order = (String) inputStream.readObject();
-                    System.out.println("Received from client: " + order);
-                    // Opslaan in database
-                    Server.getInstance().saveOrder(order);
-                    // Stuur bevestiging naar client
-                    // (Dit kan verder worden uitgewerkt afhankelijk van de behoeften van de applicatie)
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
+                try (Socket clientSocket = serverSocket.accept()) {
+                    System.out.println("Client verbonden: " + clientSocket);
+
+                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                    
+                    String order = in.readLine();
+                    System.out.println("Ontvangen van client: " + order);
+                    
+                    // Verwerk en reageer op bericht
+                    String response = "Order bevestigd: " + order;
+                    out.println(response);
+                    
+                    System.out.println("Respons verzonden naar client.");
+                } catch (IOException e) {
+                    System.err.println("Fout bij het communiceren met de client: " + e.getMessage());
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Kan geen TCP Server starten op poort " + PORT + ": " + e.getMessage());
         }
     }
 }

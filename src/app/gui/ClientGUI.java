@@ -1,288 +1,287 @@
 package app.gui;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-
+import java.awt.*;
+import java.text.SimpleDateFormat;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import network.tcp.TCPClient;
 import network.udp.UDPClient;
 import network.udp.UDPServer;
+import java.util.Date;
 
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.HashMap;
-import java.util.Map;
 
 public class ClientGUI {
+    // Hoofdcomponenten
     private JFrame frame;
-    private JPanel mainPanel;
     private CardLayout cardLayout;
-    private JPanel connectionPanel;
-    private JPanel orderPanel;
-    private JPanel addressPanel;
-    private JPanel confirmPanel;
-    private JComboBox<String> connectionComboBox;
-    private JButton connectButton;
-    private JButton nextToConfirmButton;
-    private JPanel toppingsPanel;
-    private Map<String, JCheckBox> toppingsCheckBoxes;
-    private JProgressBar progressBar;
+    private JPanel cardPanel;
 
+    // Paneelklassen
+    private ConnectionPanel connectionPanel;
+    private OrderPanel orderPanel;
+    private AddressPanel addressPanel;
+    private ConfirmPanel confirmPanel;
+
+    // Netwerk clients
     private TCPClient tcpClient;
     private UDPClient udpClient;
 
-    private final String[] pizzaOptions = {"Margherita", "Pepperoni", "Hawaiian", "Vegetarian", "Seafood", "BBQ Chicken", "Meat Lovers", "Supreme", "Capricciosa", "Quattro Stagioni"};
-    private final String[] toppingsOptions = {"Mushrooms", "Olives", "Onions", "Peppers", "Tomatoes", "Bacon", "Ham", "Sausage", "Chicken", "Pineapple"};
+    // Bestel- en adresgegevens
+    private String orderDetails = "";
+    private String addressDetails = "";
 
-    public void createAndShowGUI() {
-        frame = new JFrame("Pizza Bestellen - Klant");
+    // Constructor
+    public ClientGUI() {
+        initializeGUI();
+    }
+
+    // Hoofd initialisatie methode
+    public void initializeGUI() {
+        frame = new JFrame("Pizza Bestel Systeem");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 600);
+        frame.setSize(500, 400);
 
-        mainPanel = new JPanel();
         cardLayout = new CardLayout();
-        mainPanel.setLayout(cardLayout);
-        frame.add(mainPanel);
+        cardPanel = new JPanel(cardLayout);
 
-        connectionPanel = createConnectionPanel();
-        mainPanel.add(connectionPanel, "Connection");
+        connectionPanel = new ConnectionPanel(this);
+        orderPanel = new OrderPanel(this);
+        addressPanel = new AddressPanel(this);
+        confirmPanel = new ConfirmPanel(this);
 
-        orderPanel = createOrderPanel();
-        mainPanel.add(orderPanel, "Order");
+        cardPanel.add(connectionPanel, "ConnectionPanel");
+        cardPanel.add(orderPanel, "OrderPanel");
+        cardPanel.add(addressPanel, "AddressPanel");
+        cardPanel.add(confirmPanel, "ConfirmPanel");
 
-        addressPanel = createAddressPanel();
-        mainPanel.add(addressPanel, "Address");
-
-        confirmPanel = createConfirmPanel();
-        mainPanel.add(confirmPanel, "Confirm");
-
-        cardLayout.show(mainPanel, "Connection");
+        frame.add(cardPanel);
+        cardLayout.show(cardPanel, "ConnectionPanel");
 
         frame.setVisible(true);
     }
 
-    private JPanel createConnectionPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        JPanel centerPanel = new JPanel(new GridLayout(0, 1, 10, 10));
-        panel.add(centerPanel, BorderLayout.CENTER);
-
-        JLabel connectionLabel = new JLabel("Kies de verbindingsmethode:");
-        centerPanel.add(connectionLabel);
-
-        String[] connectionOptions = {"TCP", "UDP"};
-        connectionComboBox = new JComboBox<>(connectionOptions);
-        centerPanel.add(connectionComboBox);
-
-        connectButton = new JButton("Verbinden");
-        centerPanel.add(connectButton);
-
-        connectButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String selectedConnection = (String) connectionComboBox.getSelectedItem();
-                if (selectedConnection.equals("TCP")) {
-                    tcpClient = new TCPClient();
-                    tcpClient.connectToServer("localhost", 5000); // Pass appropriate host and port
-                    JOptionPane.showMessageDialog(frame, "TCP connection established!");
-                } else {
-                    udpClient = new UDPClient();
-                    udpClient.connectToServer("localhost", UDPServer.PORT); // Pass appropriate host and port
-                    JOptionPane.showMessageDialog(frame, "UDP connection established!");
-                }
-                cardLayout.show(mainPanel, "Order");
-            }
-        });
-
-        return panel;
+    // Methode om TCP-verbinding te starten
+    public void startTCPConnection() {
+        tcpClient = new TCPClient();
+        tcpClient.connectToServer("localhost", 5000);
+        cardLayout.show(cardPanel, "OrderPanel");
     }
 
-    private JPanel createOrderPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        JPanel topPanel = new JPanel(new GridLayout(0, 2, 10, 10));
-        panel.add(topPanel, BorderLayout.NORTH);
-
-        JPanel pizzaPanel = createPizzaPanel();
-        topPanel.add(pizzaPanel);
-
-        toppingsPanel = createToppingsPanel();
-        topPanel.add(toppingsPanel);
-
-        JTextArea cartTextArea = new JTextArea(10, 20);
-        cartTextArea.setEditable(false);
-        JScrollPane cartScrollPane = new JScrollPane(cartTextArea);
-        panel.add(cartScrollPane, BorderLayout.CENTER);
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-
-        JButton addToCartButton = new JButton("Voeg toe aan winkelmandje");
-        buttonPanel.add(addToCartButton);
-
-        JButton modifyCartButton = new JButton("Winkelmandje wijzigen");
-        buttonPanel.add(modifyCartButton);
-
-        JButton continueButton = new JButton("Doorgaan");
-        buttonPanel.add(continueButton);
-
-        progressBar = new JProgressBar(0, 100);
-        progressBar.setStringPainted(true);
-        panel.add(progressBar, BorderLayout.SOUTH);
-
-        addToCartButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                StringBuilder orderBuilder = new StringBuilder();
-                for (Component component : pizzaPanel.getComponents()) {
-                    if (component instanceof JRadioButton) {
-                        JRadioButton radioButton = (JRadioButton) component;
-                        if (radioButton.isSelected()) {
-                            orderBuilder.append(radioButton.getText()).append("\n");
-                        }
-                    }
-                }
-                for (String topping : toppingsCheckBoxes.keySet()) {
-                    JCheckBox checkBox = toppingsCheckBoxes.get(topping);
-                    if (checkBox.isSelected()) {
-                        orderBuilder.append(checkBox.getText()).append("\n");
-                        checkBox.setSelected(false); // Clear the checkbox after adding to cart
-                    }
-                }
-                cartTextArea.append(orderBuilder.toString());
-            }
-        });
-
-        modifyCartButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // Implementeer hier de logica om het winkelmandje te wijzigen
-                String modifiedCart = JOptionPane.showInputDialog(frame, "Winkelmandje wijzigen", cartTextArea.getText());
-                cartTextArea.setText(modifiedCart);
-            }
-        });
-
-        continueButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cardLayout.show(mainPanel, "Address");
-                progressBar.setValue(33); // Update progress bar to 33% completed
-            }
-        });
-
-        return panel;
+    // Methode om UDP-verbinding te starten
+    public void startUDPConnection() {
+        udpClient = new UDPClient();
+        udpClient.connectToServer("localhost", UDPServer.PORT);
+        cardLayout.show(cardPanel, "OrderPanel");
     }
 
-    private JPanel createPizzaPanel() {
-        JPanel pizzaPanel = new JPanel();
-        pizzaPanel.setBorder(BorderFactory.createTitledBorder("Kies uw pizza:"));
-        pizzaPanel.setLayout(new BoxLayout(pizzaPanel, BoxLayout.Y_AXIS));
-        ButtonGroup pizzaGroup = new ButtonGroup();
-        for (String pizzaOption : pizzaOptions) {
-            JRadioButton pizzaRadioButton = new JRadioButton(pizzaOption);
-            pizzaPanel.add(pizzaRadioButton);
-            pizzaGroup.add(pizzaRadioButton);
-        }
-        return pizzaPanel;
+    // Methode om de bestelling te versturen en naar het adrespaneel te navigeren
+public void sendOrder(String order) {
+    // Voeg datum en tijd toe aan de bestelling
+    String timeStamp = new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date());
+    orderDetails = order.trim() + "\n" + timeStamp; // Trim om overtollige lege regels te verwijderen
+
+    cardLayout.show(cardPanel, "AddressPanel");
+}
+
+public void sendAddress(String address) {
+    addressDetails = address;
+    String finalOrder = addressDetails + "\n" + orderDetails;
+
+    // Verstuur de bestelling naar de server
+    if (tcpClient != null) {
+        tcpClient.sendMessage(finalOrder);
+    } else if (udpClient != null) {
+        udpClient.sendMessage(finalOrder);
     }
 
-    private JPanel createToppingsPanel() {
-        JPanel toppingsPanel = new JPanel();
-        toppingsPanel.setBorder(BorderFactory.createTitledBorder("Extra toppings:"));
-        toppingsPanel.setLayout(new BoxLayout(toppingsPanel, BoxLayout.Y_AXIS));
-        toppingsCheckBoxes = new HashMap<>();
-        for (String toppingOption : toppingsOptions) {
-            JCheckBox toppingCheckBox = new JCheckBox(toppingOption);
-            toppingsPanel.add(toppingCheckBox);
-            toppingsCheckBoxes.put(toppingOption, toppingCheckBox);
-        }
-        return toppingsPanel;
-    }
+    // Ga naar het bevestigingspaneel
+    confirmPanel.setOrderDetails(finalOrder);
+    cardLayout.show(cardPanel, "ConfirmPanel");
+}
 
-    private JPanel createAddressPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        JPanel centerPanel = new JPanel(new GridLayout(0, 2, 10, 10));
-        panel.add(centerPanel, BorderLayout.CENTER);
-
-        JLabel nameLabel = new JLabel("Naam:");
-        centerPanel.add(nameLabel);
-        JTextField nameField = new JTextField();
-        centerPanel.add(nameField);
-
-        JLabel addressLabel = new JLabel("Adres:");
-        centerPanel.add(addressLabel);
-        JTextField addressField = new JTextField();
-        centerPanel.add(addressField);
-
-        JLabel postalLabel = new JLabel("Postcode:");
-        centerPanel.add(postalLabel);
-        JTextField postalField = new JTextField();
-        centerPanel.add(postalField);
-
-        JLabel cityLabel = new JLabel("Stad:");
-        centerPanel.add(cityLabel);
-        JTextField cityField = new JTextField();
-        centerPanel.add(cityField);
-
-        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panel.add(buttonsPanel, BorderLayout.SOUTH);
-
-        JButton backButton = new JButton("Terug");
-        buttonsPanel.add(backButton);
-
-        nextToConfirmButton = new JButton("Volgende");
-        buttonsPanel.add(nextToConfirmButton);
-
-        backButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cardLayout.show(mainPanel, "Order");
-            }
-        });
-
-        nextToConfirmButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cardLayout.show(mainPanel, "Confirm");
-                progressBar.setValue(66); // Update progress bar to 66% completed
-            }
-        });
-
-        return panel;
-    }
-
-    private JPanel createConfirmPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        JTextArea confirmTextArea = new JTextArea(10, 30);
-        confirmTextArea.setEditable(false);
-        JScrollPane confirmScrollPane = new JScrollPane(confirmTextArea);
-        panel.add(confirmScrollPane, BorderLayout.CENTER);
-
-        JButton backButton = new JButton("Terug naar bestellen");
-        panel.add(backButton, BorderLayout.SOUTH);
-
-        backButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cardLayout.show(mainPanel, "Order");
-            }
-        });
-
-        return panel;
-    }
-
+    // Methode om de applicatie te starten
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new ClientGUI().createAndShowGUI();
+        SwingUtilities.invokeLater(() -> new ClientGUI());
+    }
+
+    class ConnectionPanel extends JPanel {
+        private JComboBox<String> connectionTypeComboBox;
+        private JButton connectButton;
+
+        public ConnectionPanel(ClientGUI gui) {
+            setLayout(new GridLayout(3, 1, 10, 10));
+            add(new JLabel("Selecteer het type verbinding:"));
+
+            connectionTypeComboBox = new JComboBox<>(new String[] { "TCP", "UDP" });
+            add(connectionTypeComboBox);
+
+            connectButton = new JButton("Verbinden");
+            connectButton.addActionListener(e -> {
+                String connectionType = (String) connectionTypeComboBox.getSelectedItem();
+                if ("TCP".equals(connectionType)) {
+                    gui.startTCPConnection();
+                } else {
+                    gui.startUDPConnection();
+                }
+            });
+            add(connectButton);
+        }
+    }
+
+    class OrderPanel extends JPanel {
+        private final ClientGUI gui;
+        private final JTextArea orderTextArea;
+        private final Map<String, JCheckBox> toppingsCheckBoxes;
+        private final ButtonGroup pizzaButtonGroup; // ButtonGroup voor de pizza selectie
+
+        public OrderPanel(ClientGUI gui) {
+            this.gui = gui;
+            this.setLayout(new BorderLayout(10, 10));
+            this.toppingsCheckBoxes = new HashMap<>();
+            this.pizzaButtonGroup = new ButtonGroup(); // Initialiseer de ButtonGroup
+
+            // Pizza selectie paneel
+            JPanel pizzaSelectionPanel = new JPanel();
+            pizzaSelectionPanel.setLayout(new BoxLayout(pizzaSelectionPanel, BoxLayout.Y_AXIS));
+            pizzaSelectionPanel.setBorder(BorderFactory.createTitledBorder("Kies uw pizza:"));
+
+            String[] pizzas = { "Margherita", "Pepperoni", "Hawaiian" };
+            for (String pizza : pizzas) {
+                JRadioButton pizzaButton = new JRadioButton(pizza);
+                pizzaButton.setActionCommand(pizza); // Gebruik de pizzanaam als actiecommando
+                pizzaButtonGroup.add(pizzaButton); // Voeg de button toe aan de groep
+                pizzaSelectionPanel.add(pizzaButton);
             }
-        });
+
+            // Toppings selectie paneel
+            JPanel toppingsPanel = new JPanel();
+            toppingsPanel.setLayout(new BoxLayout(toppingsPanel, BoxLayout.Y_AXIS));
+            toppingsPanel.setBorder(BorderFactory.createTitledBorder("Extra toppings:"));
+
+            String[] toppings = { "Mushrooms", "Olives", "Peppers" };
+            for (String topping : toppings) {
+                JCheckBox checkBox = new JCheckBox(topping);
+                toppingsPanel.add(checkBox);
+                toppingsCheckBoxes.put(topping, checkBox);
+            }
+
+            // Order TextArea
+            orderTextArea = new JTextArea(5, 20);
+            orderTextArea.setEditable(false);
+            JScrollPane scrollPane = new JScrollPane(orderTextArea);
+            scrollPane.setBorder(BorderFactory.createTitledBorder("Winkelmand"));
+
+            // Button panel
+            JPanel buttonPanel = new JPanel();
+            buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+
+            JButton addToOrderButton = new JButton("Voeg toe aan bestelling");
+            addToOrderButton.addActionListener(e -> updateOrder());
+
+            JButton nextButton = new JButton("Ga naar adresgegevens");
+            nextButton.addActionListener(e -> gui.sendOrder(orderTextArea.getText()));
+
+            buttonPanel.add(addToOrderButton);
+            buttonPanel.add(nextButton);
+
+            // Add components to OrderPanel
+            this.add(pizzaSelectionPanel, BorderLayout.WEST);
+            this.add(toppingsPanel, BorderLayout.CENTER);
+            this.add(scrollPane, BorderLayout.EAST);
+            this.add(buttonPanel, BorderLayout.SOUTH);
+        }
+
+        private void updateOrder() {
+            // Vind de geselecteerde pizza en voeg deze toe aan de bestelling met het aantal
+            Enumeration<AbstractButton> pizzaButtons = pizzaButtonGroup.getElements();
+            while (pizzaButtons.hasMoreElements()) {
+                JRadioButton pizzaButton = (JRadioButton) pizzaButtons.nextElement();
+                if (pizzaButton.isSelected()) {
+                    orderTextArea.append(pizzaButton.getText() + "\n1\n"); // Voeg 1 toe voor het aantal pizza's
+                }
+            }
+
+            // Voeg het aantal geselecteerde toppings toe
+            int toppingsCount = 0;
+            StringBuilder toppingsBuilder = new StringBuilder();
+            for (Map.Entry<String, JCheckBox> toppingEntry : toppingsCheckBoxes.entrySet()) {
+                if (toppingEntry.getValue().isSelected()) {
+                    toppingsBuilder.append(toppingEntry.getKey()).append("\n");
+                    toppingsCount++;
+                    toppingEntry.getValue().setSelected(false);
+                }
+            }
+
+            if (toppingsCount > 0) {
+                orderTextArea.append(toppingsCount + "\n" + toppingsBuilder.toString());
+            } else {
+                orderTextArea.append("0\n"); // Als er geen toppings zijn geselecteerd
+            }
+            orderTextArea.append("\n"); // Voeg een lege regel toe na elke bestelling
+        }
+    }
+
+    class AddressPanel extends JPanel {
+        private final JTextField nameField;
+        private final JTextField addressField;
+        private final JTextField cityField;
+        private final JTextField postalCodeField;
+
+        public AddressPanel(ClientGUI gui) {
+            setLayout(new GridLayout(5, 2, 10, 10));
+
+            add(new JLabel("Naam:"));
+            nameField = new JTextField();
+            add(nameField);
+
+            add(new JLabel("Adres:"));
+            addressField = new JTextField();
+            add(addressField);
+
+            add(new JLabel("Stad:"));
+            cityField = new JTextField();
+            add(cityField);
+
+            add(new JLabel("Postcode:"));
+            postalCodeField = new JTextField();
+            add(postalCodeField);
+
+            JButton nextButton = new JButton("Volgende");
+            nextButton.addActionListener(e -> {
+                // Gebruik direct de tekstvelden zonder labels voor de format
+                String address = String.format("%s\n%s\n%s\n%s",
+                        nameField.getText(),
+                        addressField.getText(),
+                        cityField.getText(),
+                        postalCodeField.getText());
+                gui.sendAddress(address);
+            });
+            add(nextButton);
+        }
+    }
+
+    class ConfirmPanel extends JPanel {
+        private final JTextArea confirmTextArea;
+
+        public ConfirmPanel(ClientGUI gui) {
+            setLayout(new BorderLayout());
+            confirmTextArea = new JTextArea();
+            confirmTextArea.setEditable(false);
+            add(new JScrollPane(confirmTextArea), BorderLayout.CENTER);
+
+            JButton closeButton = new JButton("Sluit");
+            closeButton.addActionListener(e -> System.exit(0));
+            add(closeButton, BorderLayout.SOUTH);
+        }
+
+        public void setOrderDetails(String order) {
+            confirmTextArea.setText(order);
+        }
+
+        public void setAddressDetails(String address) {
+            confirmTextArea.append("\n\nAdresgegevens:\n" + address);
+        }
     }
 }
