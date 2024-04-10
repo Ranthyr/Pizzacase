@@ -4,7 +4,7 @@ Het Pizzacase project is een geavanceerd systeem voor het bestellen van pizza's,
 
 ## Inhoudsopgave
 
-- [Ontwerppatronen](#ontwerppatronen)
+- [Design Patterns](#Design-Patterns)
   - [Singleton](#singleton)
   - [Composite](#composite)
   - [Visitor](#visitor)
