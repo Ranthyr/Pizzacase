@@ -125,13 +125,19 @@ public class OrderStatisticsVisitor implements OrderVisitor {
 - **Uitbreidbaarheid:** Het patroon maakt het gemakkelijk om nieuwe operaties op de objectstructuur toe te voegen zonder deze te wijzigen, wat de uitbreidbaarheid van de applicatie verbetert.
 - **Flexibiliteit:** Verschillende bezoekers kunnen worden gedefinieerd om verschillende operaties uit te voeren zonder dat de objecten die bezocht worden gewijzigd hoeven te worden.
 
-### SSL Encryptie
+## Veiligheidsmechanismen
+
+### Data Encryption (Gegevensversleuteling)
 
 #### Toepassing in het project
 
-SSL (Secure Socket Layer) Encryptie is een essentieel beveiligingsmechanisme in het Pizzacase-project, gebruikt om een veilige communicatiekanaal tussen de client en de server te garanderen. Dit beveiligingspatroon zorgt voor vertrouwelijkheid, integriteit, en authenticatie in de gegevensoverdracht over het netwerk, wat van cruciaal belang is in applicaties waar gevoelige informatie, zoals klantgegevens en bestelgegevens, wordt uitgewisseld.
+Gegevensversleuteling speelt een cruciale rol in het Pizzacase-project om de privacy en veiligheid van de gebruikersgegevens te waarborgen. Dit omvat SSL Encryptie voor het beveiligen van data in transit en het gebruik van Message Authentication Code (MAC) voor het verifiëren van de integriteit en authenticiteit van berichten.
 
 #### Implementatie
+
+##### SSL Encryptie
+
+SSL (Secure Socket Layer) Encryptie is een essentieel beveiligingsmechanisme in het Pizzacase-project, gebruikt om een veilige communicatiekanaal tussen de client en de server te garanderen. Dit beveiligingspatroon zorgt voor vertrouwelijkheid, integriteit, en authenticatie in de gegevensoverdracht over het netwerk, wat van cruciaal belang is in applicaties waar gevoelige informatie, zoals klantgegevens en bestelgegevens, wordt uitgewisseld.
 
 In zowel de `TCPSSLClient` als `TCPSSLServer` klassen wordt SSL/TLS gebruikt om een versleutelde verbinding op te zetten. Dit wordt bereikt door SSLContext te configureren met de juiste sleutel- en truststores, die respectievelijk de privésleutels en certificaten bevatten die nodig zijn voor de encryptie en het wederzijds vertrouwen tussen de client en server.
 
@@ -151,21 +157,9 @@ sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
 SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 ```
 
-Het `keystore.jks` bestand bevat de privésleutel en het publieke certificaat van de server. De `truststore.jks` bevat de certificaten die de client vertrouwt, waaronder het publieke certificaat van de server (`server.crt`). Dit zorgt ervoor dat zowel de client als de server de identiteit van de ander kunnen verifiëren.
-
-#### Voordelen
-
-- **Vertrouwelijkheid:** Door alle communicatie te versleutelen, zorgt SSL ervoor dat gevoelige informatie beschermd is tegen onderschepping door derden.
-- **Integriteit:** SSL biedt mechanismen om te controleren of de gegevens niet zijn gewijzigd tijdens de overdracht, waardoor de integriteit van de verzonden informatie wordt gewaarborgd.
-- **Authenticatie:** Door gebruik te maken van certificaten kan SSL de identiteit van zowel de client als de server verifiëren, wat bijdraagt aan een veiligere communicatie.
-
-### Message Authentication Code (MAC)
-
-#### Toepassing in het project
+##### Message Authentication Code (MAC)
 
 In het Pizzacase-project wordt de Message Authentication Code (MAC) gebruikt als een middel om de integriteit en authenticiteit van de berichten te verifiëren die tussen de `UDPClient` en `UDPServer` worden uitgewisseld. Dit zorgt ervoor dat de gegevens niet zijn gewijzigd tijdens de overdracht en bevestigt dat het bericht afkomstig is van de legitieme bron.
-
-#### Implementatie
 
 De implementatie maakt gebruik van de HmacSHA256-algoritme voor het genereren en verifiëren van de MAC. Wanneer de `UDPClient` een bericht verzendt, genereert het een HMAC op basis van het bericht en een gedeelde geheime sleutel. Dit MAC wordt dan toegevoegd aan het bericht voordat het wordt verzonden. Bij ontvangst van het bericht scheidt de `UDPServer` de MAC van het bericht en genereert een nieuwe MAC op basis van het ontvangen bericht en de gedeelde geheime sleutel. Als de nieuw gegenereerde MAC overeenkomt met de ontvangen MAC, is het bericht geverifieerd.
 
@@ -196,6 +190,8 @@ private boolean verifyHMAC(byte[] message, byte[] receivedMac) {
 
 #### Voordelen
 
-- **Gegevensintegriteit:** MAC zorgt ervoor dat de gegevens tijdens de overdracht niet zijn gewijzigd, waardoor de integriteit van de communicatie wordt gewaarborgd.
-- **Authenticatie:** Door de overeenkomst tussen de verzonden en berekende MAC, wordt bevestigd dat het bericht afkomstig is van de verwachte bron.
-- **Veiligheid:** De implementatie van MAC met een gedeelde geheime sleutel voegt een extra laag van veiligheid toe, waardoor het moeilijker wordt voor onbevoegden om de communicatie te vervalsen.
+- **Vertrouwelijkheid:** SSL en MAC helpen om de vertrouwelijkheid van de gege
+
+vens te bewaren door te verzekeren dat alleen geautoriseerde partijen toegang hebben tot de informatie.
+- **Integriteit:** Ze garanderen dat de data niet is gewijzigd tijdens de overdracht, waardoor de betrouwbaarheid van de communicatie tussen client en server wordt gewaarborgd.
+- **Authenticatie:** SSL biedt een mechanisme voor het verifiëren van de identiteit van de partijen, terwijl MAC de authenticiteit van de verzonden berichten verifieert.
