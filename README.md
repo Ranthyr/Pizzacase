@@ -127,7 +127,7 @@ public class OrderStatisticsVisitor implements OrderVisitor {
 
 ## Security Patterns
 
-### Data Encryption (Gegevensversleuteling)
+### Data Encryption
 
 #### Toepassing in het project
 
@@ -194,7 +194,7 @@ private boolean verifyHMAC(byte[] message, byte[] receivedMac) {
 - **Integriteit:** Ze garanderen dat de data niet is gewijzigd tijdens de overdracht, waardoor de betrouwbaarheid van de communicatie tussen client en server wordt gewaarborgd.
 - **Authenticatie:** SSL biedt een mechanisme voor het verifiëren van de identiteit van de partijen, terwijl MAC de authenticiteit van de verzonden berichten verifieert.
 
-### Input Validatie
+### Input Validation
 
 #### Toepassing in het project
 
