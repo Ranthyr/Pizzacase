@@ -124,3 +124,37 @@ public class OrderStatisticsVisitor implements OrderVisitor {
 - **Scheiding van Zorgen:** Door het Visitor-patroon kunnen operationele details gescheiden worden gehouden van de objectstructuur, wat de code schoon en onderhoudbaar houdt.
 - **Uitbreidbaarheid:** Het patroon maakt het gemakkelijk om nieuwe operaties op de objectstructuur toe te voegen zonder deze te wijzigen, wat de uitbreidbaarheid van de applicatie verbetert.
 - **Flexibiliteit:** Verschillende bezoekers kunnen worden gedefinieerd om verschillende operaties uit te voeren zonder dat de objecten die bezocht worden gewijzigd hoeven te worden.
+
+### SSL Encryptie
+
+#### Toepassing in het project
+
+SSL (Secure Socket Layer) Encryptie is een essentieel beveiligingsmechanisme in het Pizzacase-project, gebruikt om een veilige communicatiekanaal tussen de client en de server te garanderen. Dit beveiligingspatroon zorgt voor vertrouwelijkheid, integriteit, en authenticatie in de gegevensoverdracht over het netwerk, wat van cruciaal belang is in applicaties waar gevoelige informatie, zoals klantgegevens en bestelgegevens, wordt uitgewisseld.
+
+#### Implementatie
+
+In zowel de `TCPSSLClient` als `TCPSSLServer` klassen wordt SSL/TLS gebruikt om een versleutelde verbinding op te zetten. Dit wordt bereikt door SSLContext te configureren met de juiste sleutel- en truststores, die respectievelijk de privésleutels en certificaten bevatten die nodig zijn voor de encryptie en het wederzijds vertrouwen tussen de client en server.
+
+```java
+KeyStore serverKeyStore = KeyStore.getInstance("JKS");
+char[] password = "PizzaCase".toCharArray();
+try (FileInputStream fis = new FileInputStream("src/network/tcp/keystore.jks")) {
+    serverKeyStore.load(fis, password);
+}
+
+KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+keyManagerFactory.init(serverKeyStore, password);
+
+SSLContext sslContext = SSLContext.getInstance("TLS");
+sslContext.init(keyManagerFactory.getKeyManagers(), null, null);
+
+SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+```
+
+Het `keystore.jks` bestand bevat de privésleutel en het publieke certificaat van de server. De `truststore.jks` bevat de certificaten die de client vertrouwt, waaronder het publieke certificaat van de server (`server.crt`). Dit zorgt ervoor dat zowel de client als de server de identiteit van de ander kunnen verifiëren.
+
+#### Voordelen
+
+- **Vertrouwelijkheid:** Door alle communicatie te versleutelen, zorgt SSL ervoor dat gevoelige informatie beschermd is tegen onderschepping door derden.
+- **Integriteit:** SSL biedt mechanismen om te controleren of de gegevens niet zijn gewijzigd tijdens de overdracht, waardoor de integriteit van de verzonden informatie wordt gewaarborgd.
+- **Authenticatie:** Door gebruik te maken van certificaten kan SSL de identiteit van zowel de client als de server verifiëren, wat bijdraagt aan een veiligere communicatie.
